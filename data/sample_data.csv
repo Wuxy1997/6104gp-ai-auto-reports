@@ -1,0 +1,101 @@
+Date,Product_Category,Product_Name,Sales_Quantity,Unit_Price,Sales_Amount,Sales_Region,Sales_Person,Customer_Rating,Notes,Customer_ID,Is_Premium
+2024-01-01,Electronics,Smartphone,15,699.99,10499.85,North America,John Smith,4.5,First day promotion,C001,True
+2024-01-01,Electronics,Laptop,8,1299.99,10399.92,Europe,Emma Wilson,4.8,Bundle deal,C002,True
+2024-01-01,Accessories,Phone Case,45,24.99,1124.55,North America,John Smith,4.2,Popular item,C003,False
+2024-01-02,Electronics,Tablet,12,449.99,5399.88,Asia,David Chen,4.6,New model launch,C004,False
+2024-01-02,Accessories,Headphones,30,89.99,2699.70,Europe,Emma Wilson,4.7,Limited edition,C005,False
+2024-01-02,Electronics,Smartwatch,18,299.99,5399.82,North America,Sarah Johnson,4.4,Feature promotion,C006,False
+2024-01-03,Home,Smart Speaker,25,129.99,3249.75,Asia,David Chen,4.3,Voice control,C007,False
+2024-01-03,Electronics,Laptop,10,1499.99,14999.90,North America,Sarah Johnson,4.9,Premium model,C008,True
+2024-01-03,Accessories,Charger,60,29.99,1799.40,Europe,Emma Wilson,4.1,Essential accessory,C009,False
+2024-01-04,Home,Security Camera,20,199.99,3999.80,North America,John Smith,4.6,Night vision,C010,False
+2024-01-04,Electronics,Smartphone,22,799.99,17599.78,Asia,David Chen,4.7,5G model,C011,False
+2024-01-04,Accessories,Screen Protector,75,14.99,1124.25,Europe,Emma Wilson,4.0,Bulk purchase,C012,False
+2024-01-05,Electronics,Gaming Console,15,499.99,7499.85,North America,Sarah Johnson,4.8,Holiday special,C013,False
+2024-01-05,Home,Smart Thermostat,28,179.99,5039.72,Europe,Emma Wilson,4.5,Energy saving,C014,False
+2024-01-05,Accessories,Gaming Controller,35,59.99,2099.65,Asia,David Chen,4.4,Wireless model,C015,False
+2024-01-06,Electronics,TV,7,1999.99,13999.93,North America,John Smith,4.9,4K resolution,C016,False
+2024-01-06,Home,Robot Vacuum,16,399.99,6399.84,Europe,Emma Wilson,4.6,Smart navigation,C017,False
+2024-01-06,Accessories,HDMI Cable,50,19.99,999.50,Asia,David Chen,4.2,High speed,C018,False
+2024-01-07,Electronics,Smartphone,20,749.99,14999.80,North America,Sarah Johnson,4.7,Trade-in offer,C019,False
+2024-01-07,Home,Smart Light Bulb,40,39.99,1599.60,Europe,Emma Wilson,4.3,Color changing,C020,False
+2024-01-07,Accessories,Wireless Mouse,55,44.99,2474.45,Asia,David Chen,4.5,Ergonomic design,C021,False
+2024-01-08,Electronics,Laptop,11,1399.99,15399.89,North America,John Smith,4.8,Business model,C022,False
+2024-01-08,Home,Video Doorbell,23,249.99,5749.77,Europe,Emma Wilson,4.4,HD camera,C023,False
+2024-01-08,Accessories,Keyboard,42,79.99,3359.58,Asia,David Chen,4.6,Mechanical keys,C024,False
+2024-01-09,Electronics,Tablet,17,549.99,9349.83,North America,Sarah Johnson,4.5,Student discount,C025,False
+2024-01-09,Home,Smart Lock,19,299.99,5699.81,Europe,Emma Wilson,4.7,Fingerprint,C026,False
+2024-01-09,Accessories,Laptop Bag,38,49.99,1899.62,Asia,David Chen,4.3,Water resistant,C027,False
+2024-01-10,Electronics,Smartwatch,24,349.99,8399.76,North America,John Smith,4.6,Health features,C028,False
+2024-01-10,Home,Air Purifier,21,279.99,5879.79,Europe,Emma Wilson,4.8,HEPA filter,C029,False
+2024-01-10,Accessories,Power Bank,65,34.99,2274.35,Asia,David Chen,4.4,Fast charging,C030,False
+2024-01-11,Electronics,Gaming Console,15,499.99,7499.85,North America,Sarah Johnson,4.8,Holiday special,C031,False
+2024-01-12,Home,Smart Thermostat,28,179.99,5039.72,Europe,Emma Wilson,4.5,Energy saving,C032,False
+2024-01-13,Accessories,Gaming Controller,35,59.99,2099.65,Asia,David Chen,4.4,Wireless model,C033,False
+2024-01-14,Electronics,TV,7,1999.99,13999.93,North America,John Smith,4.9,4K resolution,C034,False
+2024-01-15,Accessories,HDMI Cable,50,19.99,999.50,Asia,David Chen,4.2,High speed,C035,False
+2024-01-16,Electronics,Smartphone,20,749.99,14999.80,North America,Sarah Johnson,4.7,Trade-in offer,C036,False
+2024-01-17,Accessories,Wireless Mouse,55,44.99,2474.45,Asia,David Chen,4.5,Ergonomic design,C037,False
+2024-01-18,Electronics,Laptop,11,1399.99,15399.89,North America,John Smith,4.8,Business model,C038,False
+2024-01-19,Accessories,Keyboard,42,79.99,3359.58,Asia,David Chen,4.6,Mechanical keys,C039,False
+2024-01-20,Electronics,Tablet,17,549.99,9349.83,North America,Sarah Johnson,4.5,Student discount,C040,False
+2024-01-21,Home,Smart Lock,19,299.99,5699.81,Europe,Emma Wilson,4.7,Fingerprint,C041,False
+2024-01-22,Accessories,Laptop Bag,38,49.99,1899.62,Asia,David Chen,4.3,Water resistant,C042,False
+2024-01-23,Electronics,Smartwatch,24,349.99,8399.76,North America,John Smith,4.6,Health features,C043,False
+2024-01-24,Home,Air Purifier,21,279.99,5879.79,Europe,Emma Wilson,4.8,HEPA filter,C044,False
+2024-01-25,Accessories,Power Bank,65,34.99,2274.35,Asia,David Chen,4.4,Fast charging,C045,False
+2024-01-26,Electronics,Gaming Console,15,499.99,7499.85,North America,Sarah Johnson,4.8,Holiday special,C046,False
+2024-01-27,Home,Smart Thermostat,28,179.99,5039.72,Europe,Emma Wilson,4.5,Energy saving,C047,False
+2024-01-28,Accessories,Gaming Controller,35,59.99,2099.65,Asia,David Chen,4.4,Wireless model,C048,False
+2024-01-29,Electronics,TV,7,1999.99,13999.93,North America,John Smith,4.9,4K resolution,C049,False
+2024-01-30,Home,Robot Vacuum,16,399.99,6399.84,Europe,Emma Wilson,4.6,Smart navigation,C050,False
+2024-01-31,Accessories,HDMI Cable,50,19.99,999.50,Asia,David Chen,4.2,High speed,C051,False
+2024-02-01,Electronics,Smartphone,20,749.99,14999.80,North America,Sarah Johnson,4.7,Trade-in offer,C052,False
+2024-02-02,Home,Smart Light Bulb,40,39.99,1599.60,Europe,Emma Wilson,4.3,Color changing,C053,False
+2024-02-03,Accessories,Wireless Mouse,55,44.99,2474.45,Asia,David Chen,4.5,Ergonomic design,C054,False
+2024-02-04,Electronics,Laptop,11,1399.99,15399.89,North America,John Smith,4.8,Business model,C055,False
+2024-02-05,Home,Video Doorbell,23,249.99,5749.77,Europe,Emma Wilson,4.4,HD camera,C056,False
+2024-02-06,Accessories,Keyboard,42,79.99,3359.58,Asia,David Chen,4.6,Mechanical keys,C057,False
+2024-02-07,Electronics,Tablet,17,549.99,9349.83,North America,Sarah Johnson,4.5,Student discount,C058,False
+2024-02-08,Home,Smart Lock,19,299.99,5699.81,Europe,Emma Wilson,4.7,Fingerprint,C059,False
+2024-02-09,Accessories,Laptop Bag,38,49.99,1899.62,Asia,David Chen,4.3,Water resistant,C060,False
+2024-02-10,Electronics,Smartwatch,24,349.99,8399.76,North America,John Smith,4.6,Health features,C061,False
+2024-02-11,Home,Air Purifier,21,279.99,5879.79,Europe,Emma Wilson,4.8,HEPA filter,C062,False
+2024-02-12,Accessories,Power Bank,65,34.99,2274.35,Asia,David Chen,4.4,Fast charging,C063,False
+2024-02-13,Electronics,Gaming Console,15,499.99,7499.85,North America,Sarah Johnson,4.8,Holiday special,C064,False
+2024-02-14,Home,Smart Thermostat,28,179.99,5039.72,Europe,Emma Wilson,4.5,Energy saving,C065,False
+2024-02-15,Accessories,Gaming Controller,35,59.99,2099.65,Asia,David Chen,4.4,Wireless model,C066,False
+2024-02-16,Electronics,TV,7,1999.99,13999.93,North America,John Smith,4.9,4K resolution,C067,False
+2024-02-17,Home,Robot Vacuum,16,399.99,6399.84,Europe,Emma Wilson,4.6,Smart navigation,C068,False
+2024-02-18,Accessories,HDMI Cable,50,19.99,999.50,Asia,David Chen,4.2,High speed,C069,False
+2024-02-19,Electronics,Smartphone,20,749.99,14999.80,North America,Sarah Johnson,4.7,Trade-in offer,C070,False
+2024-02-20,Home,Smart Light Bulb,40,39.99,1599.60,Europe,Emma Wilson,4.3,Color changing,C071,False
+2024-02-21,Accessories,Wireless Mouse,55,44.99,2474.45,Asia,David Chen,4.5,Ergonomic design,C072,False
+2024-02-22,Electronics,Laptop,11,1399.99,15399.89,North America,John Smith,4.8,Business model,C073,False
+2024-02-23,Home,Video Doorbell,23,249.99,5749.77,Europe,Emma Wilson,4.4,HD camera,C074,False
+2024-02-24,Accessories,Keyboard,42,79.99,3359.58,Asia,David Chen,4.6,Mechanical keys,C075,False
+2024-02-25,Electronics,Tablet,17,549.99,9349.83,North America,Sarah Johnson,4.5,Student discount,C076,False
+2024-02-26,Home,Smart Lock,19,299.99,5699.81,Europe,Emma Wilson,4.7,Fingerprint,C077,False
+2024-02-27,Accessories,Laptop Bag,38,49.99,1899.62,Asia,David Chen,4.3,Water resistant,C078,False
+2024-02-28,Electronics,Smartwatch,24,349.99,8399.76,North America,John Smith,4.6,Health features,C079,False
+2024-03-01,Home,Air Purifier,21,279.99,5879.79,Europe,Emma Wilson,4.8,HEPA filter,C080,False
+2024-03-02,Accessories,Power Bank,65,34.99,2274.35,Asia,David Chen,4.4,Fast charging,C081,False
+2024-03-03,Electronics,Gaming Console,15,499.99,7499.85,North America,Sarah Johnson,4.8,Holiday special,C082,False
+2024-03-04,Home,Smart Thermostat,28,179.99,5039.72,Europe,Emma Wilson,4.5,Energy saving,C083,False
+2024-03-05,Accessories,Gaming Controller,35,59.99,2099.65,Asia,David Chen,4.4,Wireless model,C084,False
+2024-03-06,Electronics,TV,7,1999.99,13999.93,North America,John Smith,4.9,4K resolution,C085,False
+2024-03-07,Home,Robot Vacuum,16,399.99,6399.84,Europe,Emma Wilson,4.6,Smart navigation,C086,False
+2024-03-08,Accessories,HDMI Cable,50,19.99,999.50,Asia,David Chen,4.2,High speed,C087,False
+2024-03-09,Electronics,Smartphone,20,749.99,14999.80,North America,Sarah Johnson,4.7,Trade-in offer,C088,False
+2024-03-10,Home,Smart Light Bulb,40,39.99,1599.60,Europe,Emma Wilson,4.3,Color changing,C089,False
+2024-03-11,Accessories,Wireless Mouse,55,44.99,2474.45,Asia,David Chen,4.5,Ergonomic design,C090,False
+2024-03-12,Electronics,Laptop,11,1399.99,15399.89,North America,John Smith,4.8,Business model,C091,False
+2024-03-13,Home,Video Doorbell,23,249.99,5749.77,Europe,Emma Wilson,4.4,HD camera,C092,False
+2024-03-14,Accessories,Keyboard,42,79.99,3359.58,Asia,David Chen,4.6,Mechanical keys,C093,False
+2024-03-15,Electronics,Tablet,17,549.99,9349.83,North America,Sarah Johnson,4.5,Student discount,C094,False
+2024-03-16,Home,Smart Lock,19,299.99,5699.81,Europe,Emma Wilson,4.7,Fingerprint,C095,False
+2024-03-17,Accessories,Laptop Bag,38,49.99,1899.62,Asia,David Chen,4.3,Water resistant,C096,False
+2024-03-18,Electronics,Smartwatch,24,349.99,8399.76,North America,John Smith,4.6,Health features,C097,False
+2024-03-19,Home,Air Purifier,21,279.99,5879.79,Europe,Emma Wilson,4.8,HEPA filter,C098,False
+2024-03-20,Accessories,Power Bank,65,34.99,2274.35,Asia,David Chen,4.4,Fast charging,C099,False
+2024-03-21,Electronics,Gaming Console,15,499.99,7499.85,North America,Sarah Johnson,4.8,Holiday special,C100,False 
