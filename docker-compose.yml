@@ -14,7 +14,7 @@ services:
     build: .
     container_name: data-report
     ports:
-      - "8501:8501"
+      - "4000:8501"
     environment:
       - OLLAMA_HOST=http://ollama:11434
     depends_on:
