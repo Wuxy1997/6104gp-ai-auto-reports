@@ -1085,4 +1085,42 @@ IMPORTANT: Return only ONE suggestion in valid JSON format.
             "</html>"
         ])
 
-        return "\n".join(html_parts) 
+        return "\n".join(html_parts)
+
+    def fig_to_base64(self, fig) -> str:
+        """Convert matplotlib figure to base64 string"""
+        try:
+            if fig is None:
+                return ""
+                
+            # Create a BytesIO buffer
+            buf = BytesIO()
+            
+            # Save the figure to the buffer
+            if isinstance(fig, plt.Figure):
+                fig.savefig(buf, format='png', dpi=300, bbox_inches='tight')
+            else:
+                # If fig is a numpy array, convert it to a matplotlib figure first
+                plt.figure()
+                plt.imshow(fig)
+                plt.axis('off')
+                plt.savefig(buf, format='png', dpi=300, bbox_inches='tight')
+                plt.close()
+            
+            # Reset buffer position
+            buf.seek(0)
+            
+            # Convert to base64
+            img_str = base64.b64encode(buf.getvalue()).decode('utf-8')
+            
+            # Close the buffer
+            buf.close()
+            
+            # Close the figure to free memory
+            if isinstance(fig, plt.Figure):
+                plt.close(fig)
+            
+            return img_str
+        except Exception as e:
+            print(f"Error converting figure to base64: {str(e)}")
+            return "" 

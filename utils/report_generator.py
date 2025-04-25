@@ -40,13 +40,44 @@ class ReportGenerator:
 
     def fig_to_base64(self, fig) -> str:
         """Convert matplotlib figure to base64 string"""
-        buf = BytesIO()
-        fig.savefig(buf, format='png', dpi=300, bbox_inches='tight')
-        buf.seek(0)
-        return base64.b64encode(buf.getvalue()).decode('utf-8')
+        try:
+            if fig is None:
+                return ""
+                
+            # Create a BytesIO buffer
+            buf = BytesIO()
+            
+            # Save the figure to the buffer
+            if isinstance(fig, plt.Figure):
+                fig.savefig(buf, format='png', dpi=300, bbox_inches='tight')
+            else:
+                # If fig is a numpy array, convert it to a matplotlib figure first
+                plt.figure()
+                plt.imshow(fig)
+                plt.axis('off')
+                plt.savefig(buf, format='png', dpi=300, bbox_inches='tight')
+                plt.close()
+            
+            # Reset buffer position
+            buf.seek(0)
+            
+            # Convert to base64
+            img_str = base64.b64encode(buf.getvalue()).decode('utf-8')
+            
+            # Close the buffer
+            buf.close()
+            
+            # Close the figure to free memory
+            if isinstance(fig, plt.Figure):
+                plt.close(fig)
+            
+            return img_str
+        except Exception as e:
+            print(f"Error converting figure to base64: {str(e)}")
+            return ""
 
     def generate_markdown_report(self, df: pd.DataFrame, analysis_text: str, quality_report: dict,
-                               figures: List[plt.Figure] = None, analyses: List[str] = None) -> str:
+                               figures_data: List[str] = None, analyses: List[str] = None) -> str:
         """Generate markdown report with visualizations"""
         report_parts = []
         
@@ -93,18 +124,14 @@ class ReportGenerator:
             ])
         
         # Visualizations section
-        if figures and analyses:
+        if figures_data and analyses:
             report_parts.append("\n## 4. Data Visualizations")
             
-            for i, (fig, analysis) in enumerate(zip(figures, analyses), 1):
-                # Save visualization
-                viz_filename = f'visualization_{i}.png'
-                viz_path = self.save_visualization(fig, viz_filename)
-                
+            for i, (fig_data, analysis) in enumerate(zip(figures_data, analyses), 1):
                 # Add visualization and its analysis
                 report_parts.extend([
                     f"\n### Visualization {i}",
-                    f"\n![Visualization {i}]({viz_path})\n",
+                    f"\n![Visualization {i}](data:image/png;base64,{fig_data})\n",
                     "\n**Analysis:**\n",
                     analysis.replace('<ul class="analysis-points">', '').replace('</ul>', '')
                     .replace('<li>', '- ').replace('</li>', '')
@@ -113,7 +140,7 @@ class ReportGenerator:
         return "\n".join(report_parts)
 
     def generate_html_report(self, df: pd.DataFrame, analysis_text: str, quality_report: dict,
-                           figures: List[plt.Figure] = None, analyses: List[str] = None) -> str:
+                           figures_data: List[str] = None, analyses: List[str] = None) -> str:
         """Generate HTML report with visualizations"""
         
         # CSS styles
@@ -127,7 +154,7 @@ class ReportGenerator:
                 padding: 20px;
                 color: #333;
             }
-            h1, h2, h3 {
+            h1, h2, h3, h4 {
                 color: #2c3e50;
                 margin-top: 30px;
             }
@@ -226,14 +253,36 @@ class ReportGenerator:
                 "<h2>2. Data Quality Assessment</h2>",
                 "<div class='quality-metric'>",
                 "<h3>Missing Values</h3>",
-                f"<p>Total missing values: {quality_report.get('total_missing', 0)}<br>",
-                f"Columns with missing values: {', '.join(quality_report.get('columns_with_missing', []))}</p>",
+                f"<p>Total missing values: {quality_report.get('missing_values', {}).get('total', 0)}</p>",
+                "<table>",
+                "<tr><th>Column</th><th>Missing Count</th><th>Missing Percentage</th></tr>"
+            ])
+            
+            # Add missing values table
+            missing_values = quality_report.get('missing_values', {}).get('by_column', {})
+            for col, stats in missing_values.items():
+                if isinstance(stats, dict) and stats.get('Missing Count', 0) > 0:
+                    html_parts.append(
+                        f"<tr><td>{col}</td><td>{stats.get('Missing Count', 0)}</td><td>{stats.get('Missing Percentage', 0):.2f}%</td></tr>"
+                    )
+            
+            html_parts.extend([
+                "</table>",
                 "</div>",
                 "<div class='quality-metric'>",
                 "<h3>Data Types</h3>",
-                f"<p>Numeric columns: {', '.join(quality_report.get('numeric_columns', []))}<br>",
-                f"Categorical columns: {', '.join(quality_report.get('categorical_columns', []))}<br>",
-                f"DateTime columns: {', '.join(quality_report.get('datetime_columns', []))}</p>",
+                "<table>",
+                "<tr><th>Type</th><th>Columns</th></tr>"
+            ])
+            
+            # Add data types table
+            data_types = quality_report.get('data_types', {})
+            for dtype, cols in data_types.items():
+                if isinstance(cols, list) and cols:
+                    html_parts.append(f"<tr><td>{dtype}</td><td>{', '.join(cols)}</td></tr>")
+            
+            html_parts.extend([
+                "</table>",
                 "</div>",
                 "</div>"
             ])
@@ -243,28 +292,29 @@ class ReportGenerator:
             html_parts.extend([
                 "<div class='section'>",
                 "<h2>3. Analysis Insights</h2>",
-                f"<div class='analysis'>{analysis_text}</div>",
+                "<div class='analysis'>",
+                analysis_text.replace("### ", "<h3>").replace(" ###", "</h3>")
+                          .replace("## ", "<h2>").replace(" ##", "</h2>")
+                          .replace("# ", "<h1>").replace(" #", "</h1>")
+                          .replace("\n", "<br>"),
+                "</div>",
                 "</div>"
             ])
         
         # Visualizations section
-        if figures and analyses:
+        if figures_data and analyses:
             html_parts.extend([
                 "<div class='section'>",
                 "<h2>4. Data Visualizations</h2>"
             ])
             
-            for i, (fig, analysis) in enumerate(zip(figures, analyses), 1):
-                # Convert figure to base64
-                img_data = self.fig_to_base64(fig)
-                
+            for i, (fig_data, analysis) in enumerate(zip(figures_data, analyses), 1):
                 html_parts.extend([
                     "<div class='visualization'>",
                     f"<h3>Visualization {i}</h3>",
-                    f"<img src='data:image/png;base64,{img_data}' alt='Visualization {i}'>",
+                    f"<img src='data:image/png;base64,{fig_data}' alt='Visualization {i}'>",
                     "<div class='analysis'>",
-                    "<h4>Analysis:</h4>",
-                    analysis,  # analysis is already in HTML format
+                    analysis,
                     "</div>",
                     "</div>"
                 ])

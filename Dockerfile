@@ -32,7 +32,7 @@ COPY .env.example .env
 RUN pip3 install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 # Create necessary directories
-RUN mkdir -p /app/data /app/reports
+RUN mkdir -p /app/data /app/reports /app/data/processed
 
 # Expose Streamlit port
 EXPOSE 8501

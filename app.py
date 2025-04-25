@@ -14,21 +14,22 @@ from sklearn.preprocessing import LabelEncoder
 from scipy import stats
 import matplotlib.pyplot as plt
 import seaborn as sns
+from io import BytesIO
 
-# 设置页面配置
+# Configure page settings
 st.set_page_config(
     page_title="Automated Data Report Generator",
     layout="wide"
 )
 
-# 隐藏部署按钮和菜单并设置深色主题
+# Hide deploy button and menu, set dark theme
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
     footer {visibility: hidden;}
     
-    /* 深色主题基础样式 */
+    /* Dark theme base styles */
     :root {
         --bg-color: #0e1117;
         --text-color: #fafafa;
@@ -58,13 +59,13 @@ st.markdown("""
         color: var(--text-color) !important;
     }
     
-    /* 整体背景和文字 */
+    /* Overall background and text */
     .stApp {
         background-color: var(--bg-color);
         color: var(--text-color);
     }
     
-    /* 标题样式 */
+    /* Title styles */
     h1 {
         color: var(--accent-color);
         font-size: 36px !important;
@@ -76,14 +77,14 @@ st.markdown("""
         margin-bottom: 30px !important;
     }
     
-    /* 子标题样式 */
+    /* Subtitle styles */
     h2, h3 {
         color: var(--text-color);
         font-weight: 600 !important;
         margin: 20px 0 10px 0 !important;
     }
     
-    /* 标签页样式 */
+    /* Tab styles */
     .stTabs [data-baseweb="tab-list"] {
         gap: 10px;
         background-color: var(--secondary-bg);
@@ -111,7 +112,7 @@ st.markdown("""
         border: none !important;
     }
     
-    /* 按钮样式 */
+    /* Button styles */
     .stButton > button {
         width: 100%;
         background-color: var(--accent-color);
@@ -128,7 +129,7 @@ st.markdown("""
         border: none;
     }
     
-    /* 输入框和选择框样式 */
+    /* Input and select box styles */
     .stTextInput > div > div > input,
     .stSelectbox > div > div > select {
         background-color: var(--secondary-bg);
@@ -139,7 +140,7 @@ st.markdown("""
         font-size: 16px;
     }
     
-    /* 数据框样式 */
+    /* DataFrame styles */
     .stDataFrame {
         background-color: var(--secondary-bg);
         border: 1px solid #4e4e4e;
@@ -147,12 +148,12 @@ st.markdown("""
         padding: 10px;
     }
     
-    /* 进度条样式 */
+    /* Progress bar styles */
     .stProgress > div > div > div > div {
         background-color: var(--accent-color);
     }
     
-    /* 警告和错误消息样式 */
+    /* Warning and error message styles */
     .stAlert {
         background-color: rgba(255, 243, 205, 0.1);
         color: #ffd700;
@@ -161,7 +162,7 @@ st.markdown("""
         border: 1px solid rgba(255, 243, 205, 0.2);
     }
     
-    /* 上传区域样式 */
+    /* Upload area styles */
     .uploadedFile {
         background-color: var(--secondary-bg);
         border: 2px dashed #4e4e4e;
@@ -174,12 +175,12 @@ st.markdown("""
         border-color: var(--accent-color);
     }
     
-    /* 下载按钮样式 */
+    /* Download button styles */
     .download-button {
         display: inline-block;
         padding: 10px 20px;
         background-color: var(--accent-color);
-        color: var(--text-color);
+        color: #ffffff !important;  /* Force white text color */
         text-decoration: none;
         border-radius: 5px;
         margin: 10px 0;
@@ -189,18 +190,18 @@ st.markdown("""
     
     .download-button:hover {
         background-color: var(--hover-color);
-        color: var(--text-color);
+        color: #ffffff !important;  /* Ensure white color on hover */
         text-decoration: none;
     }
     
-    /* 代码块样式 */
+    /* Code block styles */
     .stCodeBlock {
         background-color: var(--secondary-bg);
         border: 1px solid #4e4e4e;
         border-radius: 5px;
     }
     
-    /* 响应式调整 */
+    /* Responsive adjustments */
     @media screen and (max-width: 768px) {
         h1 {
             font-size: 28px !important;
@@ -214,15 +215,15 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 def render_data_upload_tab():
-    """数据上传和预览标签页"""
+    """Data upload and preview tab"""
     st.header("Data Upload & Preview")
 
-    # 文件上传
+    # File upload
     uploaded_file = st.file_uploader("Upload your data file", type=['csv'])
 
     if uploaded_file is not None:
         try:
-            # 读取数据
+            # Read data
             df = pd.read_csv(uploaded_file)
             
             # Rename columns to English
@@ -240,41 +241,124 @@ def render_data_upload_tab():
             }
             df = df.rename(columns=column_mapping)
             
-            st.session_state.df = df
-            # 保存原始数据备份
-            st.session_state.data_processing_state['original_data'] = df.copy()
-            st.session_state.data_processing_state['processing_steps'] = []
-            st.session_state.data_processing_state['last_modified'] = datetime.now()
-            
+            # Initialize session state
+            st.session_state.original_df = df.copy()  # Save original data
+            st.session_state.processed_df = df.copy()  # Create copy for processing
             st.session_state.processor = DataProcessor()
             st.session_state.visualizer = DataVisualizer()
+            
+            # Initialize data processing state
+            st.session_state.data_processing_state = {
+                'original_data': df.copy(),  # Save original data backup
+                'processing_steps': [],      # Initialize processing steps record
+                'last_modified': datetime.now(),  # Record last modification time
+                'current_step': None,        # Current processing step
+                'current_df_hash': hash(df.to_string())  # Current data hash value
+            }
 
-            # 数据预览
+            # Data preview
             st.subheader("Data Preview")
-            st.dataframe(df.head())
+            st.dataframe(st.session_state.processed_df.head())
 
-            # 显示数据信息
+            # Display data information
             st.subheader("Data Information")
             col1, col2 = st.columns(2)
             with col1:
-                st.write(f"Rows: {df.shape[0]}")
-                st.write(f"Columns: {df.shape[1]}")
+                st.write(f"Rows: {st.session_state.processed_df.shape[0]}")
+                st.write(f"Columns: {st.session_state.processed_df.shape[1]}")
             with col2:
                 st.write("Column Types:")
-                st.write(df.dtypes)
+                st.write(st.session_state.processed_df.dtypes)
                 
+            # Display data quality report
+            st.subheader("Data Quality Report")
+            quality_report = st.session_state.processor.detect_data_quality(st.session_state.processed_df)
+            
+            # Display missing values information
+            st.markdown("#### Missing Values")
+            missing_values = st.session_state.processed_df.isnull().sum()
+            missing_percentages = (missing_values / len(st.session_state.processed_df) * 100).round(2)
+            
+            missing_df = pd.DataFrame({
+                'Missing Count': missing_values,
+                'Missing Percentage': missing_percentages
+            })
+            missing_df = missing_df[missing_df['Missing Count'] > 0]
+            
+            if not missing_df.empty:
+                st.write("Total missing values:", missing_values.sum())
+                st.write("Columns with missing values:")
+                st.dataframe(missing_df)
+            else:
+                st.write("Total missing values: 0")
+                st.write("No columns contain missing values.")
+            
+            # Display data type information
+            st.markdown("#### Data Types")
+            dtype_counts = st.session_state.processed_df.dtypes.value_counts()
+            numeric_cols = st.session_state.processed_df.select_dtypes(include=['int64', 'float64']).columns.tolist()
+            categorical_cols = st.session_state.processed_df.select_dtypes(include=['object']).columns.tolist()
+            datetime_cols = st.session_state.processed_df.select_dtypes(include=['datetime64']).columns.tolist()
+            
+            st.write(f"Numeric columns ({len(numeric_cols)}):", ", ".join(numeric_cols) if numeric_cols else "None")
+            st.write(f"Categorical columns ({len(categorical_cols)}):", ", ".join(categorical_cols) if categorical_cols else "None")
+            st.write(f"DateTime columns ({len(datetime_cols)}):", ", ".join(datetime_cols) if datetime_cols else "None")
+            
+            # Display basic statistics
+            st.markdown("#### Basic Statistics")
+            st.write("Numeric Columns Summary:")
+            st.dataframe(st.session_state.processed_df.describe())
+            
+            # Display unique values information
+            st.markdown("#### Unique Values")
+            unique_counts = st.session_state.processed_df.nunique()
+            unique_percentages = (unique_counts / len(st.session_state.processed_df) * 100).round(2)
+            
+            unique_df = pd.DataFrame({
+                'Unique Count': unique_counts,
+                'Unique Percentage': unique_percentages
+            })
+            st.dataframe(unique_df)
+            
+            # Display duplicate rows information
+            st.markdown("#### Duplicate Rows")
+            duplicate_count = st.session_state.processed_df.duplicated().sum()
+            st.write(f"Number of duplicate rows: {duplicate_count}")
+            st.write(f"Percentage of duplicate rows: {(duplicate_count / len(st.session_state.processed_df) * 100):.2f}%")
+            
         except Exception as e:
-            st.error(f"Error reading file: {str(e)}")
+            st.error(f"Error loading data: {str(e)}")
     else:
-        st.info("Please upload a CSV file to begin.")
+        # Display prompt if no file is uploaded
+        st.info("Please upload a CSV file to begin data analysis.")
 
 def render_data_processing_tab():
     """数据处理标签页"""
     st.header("Data Processing")
     
-    if 'df' not in st.session_state or st.session_state.df is None:
-        st.warning("Please upload data first!")
-        return
+    # 尝试加载最近处理的数据
+    if 'processed_df' not in st.session_state or st.session_state.processed_df is None:
+        loaded_df = load_processed_data()
+        if loaded_df is not None:
+            st.session_state.processed_df = loaded_df
+            st.success("Loaded last processed data successfully!")
+        else:
+            st.warning("Please upload data first!")
+            return
+
+    # 显示当前数据预览
+    st.markdown("### Current Data Preview")
+    st.dataframe(st.session_state.processed_df.head())
+    
+    # 显示数据信息
+    st.markdown("### Data Information")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.write(f"Rows: {st.session_state.processed_df.shape[0]}")
+        st.write(f"Columns: {st.session_state.processed_df.shape[1]}")
+    with col2:
+        st.write("Column Types:")
+        st.write(st.session_state.processed_df.dtypes)
 
     # 显示数据处理历史
     if st.session_state.data_processing_state['processing_steps']:
@@ -285,6 +369,7 @@ def render_data_processing_tab():
                 - **{step['type'].replace('_', ' ').title()}**
                   - Method: {step['method']}
                   - Time: {step['timestamp'].strftime('%Y-%m-%d %H:%M:%S')}
+                  - Saved File: {step.get('saved_file', 'Not saved')}
                 {f"- Fill Value: {step['fill_value']}" if 'fill_value' in step and step['fill_value'] is not None else ""}
                 """)
 
@@ -308,36 +393,35 @@ def render_data_processing_tab():
         
         with left_col:
             # 显示当前缺失值情况
-            if st.session_state.df is not None:
-                missing_stats = pd.DataFrame({
-                    'Missing Values': st.session_state.df.isnull().sum(),
-                    'Percentage': (st.session_state.df.isnull().sum() / len(st.session_state.df) * 100).round(2)
-                })
-                
-                # 只显示有缺失值的列
-                missing_stats = missing_stats[missing_stats['Missing Values'] > 0]
-                
-                if not missing_stats.empty:
-                    st.markdown("#### Current Missing Values")
-                    st.dataframe(missing_stats, use_container_width=True)
-                else:
-                    st.success("No missing values in the dataset!")
+            missing_stats = pd.DataFrame({
+                'Missing Values': st.session_state.processed_df.isnull().sum(),
+                'Percentage': (st.session_state.processed_df.isnull().sum() / len(st.session_state.processed_df) * 100).round(2)
+            })
+            
+            # 只显示有缺失值的列
+            missing_stats = missing_stats[missing_stats['Missing Values'] > 0]
+            
+            if not missing_stats.empty:
+                st.markdown("#### Current Missing Values")
+                st.dataframe(missing_stats, use_container_width=True)
+            else:
+                st.success("No missing values in the dataset!")
             
             with st.form("missing_values_form"):
                 missing_method = st.selectbox(
                     "Method",
-                    ["drop", "mean", "median", "mode", "constant"],
+                    ["drop", "fill_mean", "fill_median", "fill_mode", "fill_constant"],
                     help="""
                     - drop: Remove rows with missing values
-                    - mean: Fill missing values with column mean (numeric only)
-                    - median: Fill missing values with column median (numeric only)
-                    - mode: Fill missing values with column mode
-                    - constant: Fill missing values with a specified value
+                    - fill_mean: Fill missing values with column mean (numeric only)
+                    - fill_median: Fill missing values with column median (numeric only)
+                    - fill_mode: Fill missing values with column mode
+                    - fill_constant: Fill missing values with a specified value
                     """
                 )
                 
-                # 只在选择constant方法时显示填充值输入框
-                if missing_method == "constant":
+                # 只在选择fill_constant方法时显示填充值输入框
+                if missing_method == "fill_constant":
                     fill_value = st.text_input(
                         "Fill Value",
                         value="0",
@@ -350,41 +434,57 @@ def render_data_processing_tab():
                 
                 if submit_button:
                     try:
-                        if missing_method == "constant" and not fill_value:
+                        if missing_method == "fill_constant" and not fill_value:
                             st.error("Please specify a fill value")
                         else:
-                            st.session_state.df = handle_missing_values(
-                                st.session_state.df,
+                            # 处理数据
+                            df_processed = handle_missing_values(
+                                st.session_state.processed_df,
                                 missing_method,
                                 fill_value
                             )
+                            
+                            # 显示处理结果
+                            st.success("Missing values processed successfully!")
+                            
+                            # 显示处理前后的比较
+                            st.markdown("#### Processing Results")
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                st.write("Before Processing:")
+                                missing_before = st.session_state.processed_df.isnull().sum()
+                                st.write(missing_before[missing_before > 0])
+                            with col2:
+                                st.write("After Processing:")
+                                missing_after = df_processed.isnull().sum()
+                                st.write(missing_after[missing_after > 0])
+                            
                     except Exception as e:
                         st.error(f"Error handling missing values: {str(e)}")
         
         with right_col:
             st.markdown("#### Processing Results")
-            if st.session_state.df is not None:
-                # 计算处理前后的统计信息
-                missing_before = st.session_state.df.isnull().sum()
-                total_missing_before = missing_before.sum()
-                total_cells = st.session_state.df.size
-                
-                # 创建进度条显示缺失值比例
-                missing_percentage = (total_missing_before / total_cells) * 100
-                st.metric(
-                    "Missing Values Percentage",
-                    f"{missing_percentage:.2f}%",
-                    delta=f"-{missing_percentage:.2f}%" if missing_percentage > 0 else "0%"
-                )
-                
-                # 显示每列的缺失值分布
-                st.markdown("#### Missing Values Distribution")
-                fig, ax = plt.subplots(figsize=(8, 4))
-                missing_before.plot(kind='bar')
-                plt.xticks(rotation=45, ha='right')
-                plt.tight_layout()
-                st.pyplot(fig)
-                plt.close()
+            # 计算处理前后的统计信息
+            missing_before = st.session_state.processed_df.isnull().sum()
+            total_missing_before = missing_before.sum()
+            total_cells = st.session_state.processed_df.size
+            
+            # 创建进度条显示缺失值比例
+            missing_percentage = (total_missing_before / total_cells) * 100
+            st.metric(
+                "Missing Values Percentage",
+                f"{missing_percentage:.2f}%",
+                delta=f"-{missing_percentage:.2f}%" if missing_percentage > 0 else "0%"
+            )
+            
+            # 显示每列的缺失值分布
+            st.markdown("#### Missing Values Distribution")
+            fig, ax = plt.subplots(figsize=(8, 4))
+            missing_before.plot(kind='bar')
+            plt.xticks(rotation=45, ha='right')
+            plt.tight_layout()
+            st.pyplot(fig)
+            plt.close()
 
     # 数据标准化标签页
     with normalize_tab:
@@ -410,38 +510,52 @@ def render_data_processing_tab():
                 )
                 
                 # 选择要标准化的列
-                numeric_cols = st.session_state.df.select_dtypes(include=['int64', 'float64']).columns
-                norm_columns = st.multiselect(
-                    "Select columns to normalize",
-                    numeric_cols,
-                    default=list(numeric_cols),
-                    help="Choose the numeric columns you want to normalize"
-                )
-                
-                submit_button = st.form_submit_button("Normalize Data")
-                
-                if submit_button and norm_columns:
-                    try:
-                        # 只标准化选中的列
-                        df_temp = st.session_state.df.copy()
-                        df_temp[norm_columns] = normalize_data(df_temp[norm_columns], norm_method)
-                        st.session_state.df = df_temp
-                        
-                        # 记录处理步骤
-                        step_info = {
-                            'type': 'normalization',
-                            'method': norm_method,
-                            'columns': norm_columns,
-                            'timestamp': datetime.now()
-                        }
-                        st.session_state.data_processing_state['processing_steps'].append(step_info)
-                        
-                        st.success("Data normalized successfully!")
-                    except Exception as e:
-                        st.error(f"Error normalizing data: {str(e)}")
+                numeric_cols = st.session_state.processed_df.select_dtypes(include=['int64', 'float64']).columns
+                if len(numeric_cols) == 0:
+                    st.warning("No numeric columns found for normalization")
+                else:
+                    norm_columns = st.multiselect(
+                        "Select columns to normalize",
+                        numeric_cols,
+                        default=list(numeric_cols),
+                        help="Choose the numeric columns you want to normalize"
+                    )
+                    
+                    submit_button = st.form_submit_button("Normalize Data")
+                    
+                    if submit_button and norm_columns:
+                        try:
+                            # 处理数据
+                            df_normalized = normalize_data(st.session_state.processed_df, norm_method)
+                            
+                            # 记录处理步骤
+                            step_info = {
+                                'type': 'normalization',
+                                'method': norm_method,
+                                'columns': norm_columns,
+                                'timestamp': datetime.now()
+                            }
+                            st.session_state.data_processing_state['processing_steps'].append(step_info)
+                            
+                            st.success("Data normalized successfully!")
+                            
+                            # 显示处理前后的比较
+                            st.markdown("#### Processing Results")
+                            for col in norm_columns:
+                                st.write(f"\n**Column: {col}**")
+                                col1, col2 = st.columns(2)
+                                with col1:
+                                    st.write("Before Normalization:")
+                                    st.write(st.session_state.processed_df[col].describe())
+                                with col2:
+                                    st.write("After Normalization:")
+                                    st.write(df_normalized[col].describe())
+                            
+                        except Exception as e:
+                            st.error(f"Error normalizing data: {str(e)}")
         
         with right_col:
-            if norm_columns:
+            if 'df_normalized' in locals() and df_normalized is not None:
                 st.markdown("#### Column Statistics")
                 # 为选中的列创建描述性统计图表
                 for col in norm_columns:
@@ -449,13 +563,12 @@ def render_data_processing_tab():
                         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6))
                         
                         # 原始数据分布
-                        sns.histplot(st.session_state.df[col], ax=ax1)
+                        sns.histplot(st.session_state.processed_df[col], ax=ax1)
                         ax1.set_title("Original Distribution")
                         
                         # 标准化后的分布
-                        if st.session_state.df is not None:
-                            sns.histplot(st.session_state.df[col], ax=ax2)
-                            ax2.set_title("Normalized Distribution")
+                        sns.histplot(df_normalized[col], ax=ax2)
+                        ax2.set_title("Normalized Distribution")
                         
                         plt.tight_layout()
                         st.pyplot(fig)
@@ -463,7 +576,9 @@ def render_data_processing_tab():
                         
                         # 显示基本统计信息
                         st.markdown("**Basic Statistics:**")
-                        st.write(st.session_state.df[col].describe())
+                        st.write(df_normalized[col].describe())
+            else:
+                st.info("Please normalize data first to see the distribution plots.")
 
     # 处理异常值标签页
     with outliers_tab:
@@ -479,10 +594,11 @@ def render_data_processing_tab():
             with st.form("outliers_form"):
                 outlier_method = st.selectbox(
                     "Detection Method",
-                    ["zscore", "iqr"],
+                    ["zscore", "iqr", "percentile"],
                     help="""
                     - zscore: Use Z-score method (standard deviations from mean)
                     - iqr: Use Interquartile Range method
+                    - percentile: Use percentile method
                     """
                 )
                 
@@ -494,64 +610,80 @@ def render_data_processing_tab():
                 )
                 
                 # 选择要处理的列
-                numeric_cols = st.session_state.df.select_dtypes(include=['int64', 'float64']).columns
-                outlier_columns = st.multiselect(
-                    "Select columns to check for outliers",
-                    numeric_cols,
-                    default=list(numeric_cols)
-                )
-                
-                submit_button = st.form_submit_button("Handle Outliers")
-                
-                if submit_button and outlier_columns:
-                    try:
-                        df_temp = st.session_state.df.copy()
-                        df_temp = handle_outliers(
-                            df_temp,
-                            outlier_method,
-                            outlier_threshold
-                        )
-                        st.session_state.df = df_temp
-                        
-                        # 记录处理步骤
-                        step_info = {
-                            'type': 'outliers',
-                            'method': outlier_method,
-                            'threshold': outlier_threshold,
-                            'timestamp': datetime.now()
-                        }
-                        st.session_state.data_processing_state['processing_steps'].append(step_info)
-                        
-                        st.success("Outliers handled successfully!")
-                    except Exception as e:
-                        st.error(f"Error handling outliers: {str(e)}")
+                numeric_cols = st.session_state.processed_df.select_dtypes(include=['int64', 'float64']).columns
+                if len(numeric_cols) == 0:
+                    st.warning("No numeric columns found for outlier detection")
+                else:
+                    outlier_columns = st.multiselect(
+                        "Select columns to check for outliers",
+                        numeric_cols,
+                        default=list(numeric_cols)
+                    )
+                    
+                    submit_button = st.form_submit_button("Handle Outliers")
+                    
+                    if submit_button and outlier_columns:
+                        try:
+                            # 处理数据
+                            df_processed = handle_outliers(
+                                st.session_state.processed_df,
+                                outlier_method,
+                                outlier_threshold
+                            )
+                            
+                            # 记录处理步骤
+                            step_info = {
+                                'type': 'outliers',
+                                'method': outlier_method,
+                                'threshold': outlier_threshold,
+                                'columns': outlier_columns,
+                                'timestamp': datetime.now()
+                            }
+                            st.session_state.data_processing_state['processing_steps'].append(step_info)
+                            
+                            st.success("Outliers handled successfully!")
+                            
+                            # 显示处理前后的比较
+                            st.markdown("#### Processing Results")
+                            for col in outlier_columns:
+                                st.write(f"\n**Column: {col}**")
+                                col1, col2 = st.columns(2)
+                                with col1:
+                                    st.write("Before Processing:")
+                                    st.write(st.session_state.processed_df[col].describe())
+                                with col2:
+                                    st.write("After Processing:")
+                                    st.write(df_processed[col].describe())
+                            
+                        except Exception as e:
+                            st.error(f"Error handling outliers: {str(e)}")
         
         with right_col:
-            if outlier_columns:
+            if 'outlier_columns' in locals() and outlier_columns:
                 st.markdown("#### Outlier Analysis")
                 for col in outlier_columns:
                     with st.expander(f"{col} Outliers", expanded=False):
                         # 创建箱线图
                         fig, ax = plt.subplots(figsize=(8, 4))
-                        sns.boxplot(data=st.session_state.df[col], ax=ax)
+                        sns.boxplot(data=st.session_state.processed_df[col], ax=ax)
                         plt.title(f"Box Plot for {col}")
                         st.pyplot(fig)
                         plt.close()
                         
                         # 显示异常值统计
-                        q1 = st.session_state.df[col].quantile(0.25)
-                        q3 = st.session_state.df[col].quantile(0.75)
+                        q1 = st.session_state.processed_df[col].quantile(0.25)
+                        q3 = st.session_state.processed_df[col].quantile(0.75)
                         iqr = q3 - q1
-                        outliers = st.session_state.df[
-                            (st.session_state.df[col] < (q1 - 1.5 * iqr)) |
-                            (st.session_state.df[col] > (q3 + 1.5 * iqr))
+                        outliers = st.session_state.processed_df[
+                            (st.session_state.processed_df[col] < (q1 - 1.5 * iqr)) |
+                            (st.session_state.processed_df[col] > (q3 + 1.5 * iqr))
                         ][col]
                         
                         st.markdown(f"""
                         **Outlier Statistics:**
-                        - Total values: {len(st.session_state.df[col])}
+                        - Total values: {len(st.session_state.processed_df[col])}
                         - Outliers found: {len(outliers)}
-                        - Outlier percentage: {(len(outliers) / len(st.session_state.df[col]) * 100):.2f}%
+                        - Outlier percentage: {(len(outliers) / len(st.session_state.processed_df[col]) * 100):.2f}%
                         """)
 
     # 编码分类变量标签页
@@ -577,50 +709,70 @@ def render_data_processing_tab():
                 )
                 
                 # 选择要编码的列
-                categorical_cols = st.session_state.df.select_dtypes(include=['object']).columns
-                encode_columns = st.multiselect(
-                    "Select columns to encode",
-                    categorical_cols,
-                    default=list(categorical_cols),
-                    help="Choose the categorical columns you want to encode"
-                )
-                
-                submit_button = st.form_submit_button("Encode Variables")
-                
-                if submit_button and encode_columns:
-                    try:
-                        df_temp = st.session_state.df.copy()
-                        df_temp = encode_categorical(
-                            df_temp,
-                            encode_method
-                        )
-                        st.session_state.df = df_temp
-                        
-                        # 记录处理步骤
-                        step_info = {
-                            'type': 'categorical_encoding',
-                            'method': encode_method,
-                            'columns': encode_columns,
-                            'timestamp': datetime.now()
-                        }
-                        st.session_state.data_processing_state['processing_steps'].append(step_info)
-                        
-                        st.success("Categorical variables encoded successfully!")
-                    except Exception as e:
-                        st.error(f"Error encoding variables: {str(e)}")
+                categorical_cols = st.session_state.processed_df.select_dtypes(include=['object']).columns
+                if len(categorical_cols) == 0:
+                    st.warning("No categorical columns found for encoding")
+                else:
+                    encode_columns = st.multiselect(
+                        "Select columns to encode",
+                        categorical_cols,
+                        default=list(categorical_cols),
+                        help="Choose the categorical columns you want to encode"
+                    )
+                    
+                    submit_button = st.form_submit_button("Encode Variables")
+                    
+                    if submit_button and encode_columns:
+                        try:
+                            # 处理数据
+                            df_encoded = encode_categorical(
+                                st.session_state.processed_df,
+                                encode_method
+                            )
+                            
+                            # 记录处理步骤
+                            step_info = {
+                                'type': 'categorical_encoding',
+                                'method': encode_method,
+                                'columns': encode_columns,
+                                'timestamp': datetime.now()
+                            }
+                            st.session_state.data_processing_state['processing_steps'].append(step_info)
+                            
+                            st.success("Categorical variables encoded successfully!")
+                            
+                            # 显示处理前后的比较
+                            st.markdown("#### Processing Results")
+                            for col in encode_columns:
+                                st.write(f"\n**Column: {col}**")
+                                col1, col2 = st.columns(2)
+                                with col1:
+                                    st.write("Before Encoding:")
+                                    st.write(st.session_state.processed_df[col].value_counts())
+                                with col2:
+                                    st.write("After Encoding:")
+                                    if encode_method == "one_hot":
+                                        # 对于one-hot编码，显示新创建的列
+                                        new_cols = [c for c in df_encoded.columns if c.startswith(col)]
+                                        st.write(df_encoded[new_cols].sum())
+                                    else:
+                                        st.write(df_encoded[col].value_counts())
+                            
+                        except Exception as e:
+                            st.error(f"Error encoding categorical variables: {str(e)}")
         
         with right_col:
-            if encode_columns:
+            if 'encode_columns' in locals() and encode_columns:
                 st.markdown("#### Encoding Preview")
                 for col in encode_columns:
                     with st.expander(f"{col} Encoding", expanded=False):
                         # 显示原始类别分布
                         st.markdown("**Original Categories:**")
-                        st.write(st.session_state.df[col].value_counts())
+                        st.write(st.session_state.processed_df[col].value_counts())
                         
                         # 可视化类别分布
                         fig, ax = plt.subplots(figsize=(8, 4))
-                        st.session_state.df[col].value_counts().plot(kind='bar')
+                        st.session_state.processed_df[col].value_counts().plot(kind='bar')
                         plt.xticks(rotation=45, ha='right')
                         plt.tight_layout()
                         st.pyplot(fig)
@@ -667,13 +819,13 @@ def render_data_processing_tab():
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 if export_format == "CSV":
                     output_path = os.path.join(output_dir, f"{file_name}_{timestamp}.csv")
-                    st.session_state.df.to_csv(output_path, index=False, encoding=encoding)
+                    st.session_state.processed_df.to_csv(output_path, index=False, encoding=encoding)
                 elif export_format == "Excel":
                     output_path = os.path.join(output_dir, f"{file_name}_{timestamp}.xlsx")
-                    st.session_state.df.to_excel(output_path, index=False)
+                    st.session_state.processed_df.to_excel(output_path, index=False)
                 else:  # JSON
                     output_path = os.path.join(output_dir, f"{file_name}_{timestamp}.json")
-                    st.session_state.df.to_json(output_path, orient='records', force_ascii=False)
+                    st.session_state.processed_df.to_json(output_path, orient='records', force_ascii=False)
                 
                 # 创建下载链接
                 with open(output_path, 'rb') as f:
@@ -696,13 +848,27 @@ def render_data_processing_tab():
 def render_visualization_tab():
     st.header("Data Visualization")
     
-    if "df" not in st.session_state:
-        st.warning("Please upload a dataset first.")
+    if 'processed_df' not in st.session_state or st.session_state.processed_df is None:
+        st.warning("Please upload data first!")
         return
         
     # 创建可视化器实例
     if st.session_state.visualizer is None:
         st.session_state.visualizer = DataVisualizer()
+    
+    # 显示当前数据预览
+    st.markdown("### Current Data Preview")
+    st.dataframe(st.session_state.processed_df.head())
+    
+    # 显示数据信息
+    st.markdown("### Data Information")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.write(f"Rows: {st.session_state.processed_df.shape[0]}")
+        st.write(f"Columns: {st.session_state.processed_df.shape[1]}")
+    with col2:
+        st.write("Column Types:")
+        st.write(st.session_state.processed_df.dtypes)
     
     # 添加用户查询输入
     st.subheader("Visualization Query")
@@ -762,9 +928,15 @@ def render_visualization_tab():
                 plt.rcParams['figure.figsize'] = [chart_width, chart_height]
                 plt.rcParams['axes.grid'] = show_grid
                 
+                # 确保使用最新的processed_df
+                df = st.session_state.processed_df.copy()  # 创建副本以避免修改原始数据
+                
+                # 记录当前数据状态
+                current_df_hash = hash(df.to_string())
+                
                 # 生成可视化建议
                 suggestions = st.session_state.visualizer.suggest_visualizations(
-                    st.session_state.df,
+                    df,
                     query
                 )
                 
@@ -772,31 +944,50 @@ def render_visualization_tab():
                 figures = []
                 analyses = []
                 
-                for suggestion in suggestions:
+                # 为每个建议创建独特的可视化
+                for i, suggestion in enumerate(suggestions):
+                    # 为每个建议添加唯一标识符
+                    suggestion['id'] = f"{query}_{i}"
+                    
+                    # 生成可视化
                     fig = st.session_state.visualizer.create_visualization(
                         suggestion,
-                        st.session_state.df
+                        df
                     )
                     if fig is not None:
                         figures.append(fig)
                         
-                        # 生成分析
+                        # 生成分析，包含查询上下文
                         analysis = st.session_state.visualizer._generate_visualization_analysis(
-                            st.session_state.df,
+                            df,
                             suggestion
                         )
                         analyses.append(analysis)
                 
-                # 保存到session state
-                st.session_state.visualization_results = {
-                    'figures': figures.copy(),  # 创建副本以避免引用问题
+                # 初始化可视化历史记录
+                if 'visualization_history' not in st.session_state:
+                    st.session_state.visualization_history = []
+                
+                # 创建新的可视化记录
+                new_viz_record = {
+                    'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    'query': query,
+                    'figures_data': [st.session_state.visualizer.fig_to_base64(fig) for fig in figures],  # 将图形转换为base64
                     'analyses': analyses.copy(),
-                    'last_query': query
+                    'processed_df_hash': current_df_hash,
+                    'processed_df': df.copy(),
+                    'suggestions': suggestions
                 }
+                
+                # 添加到历史记录
+                st.session_state.visualization_history.append(new_viz_record)
+                
+                # 更新当前可视化结果
+                st.session_state.visualization_results = new_viz_record
                 
                 # 生成HTML可视化页面
                 html_content = st.session_state.visualizer.generate_visualization_page(
-                    st.session_state.df,
+                    df,
                     query
                 )
                 
@@ -818,31 +1009,43 @@ def render_visualization_tab():
                 plt.style.use('default')
                 
     # 显示历史可视化
-    if 'visualization_results' in st.session_state and st.session_state.visualization_results.get('figures'):
-        with st.expander("Previous Visualizations"):
-            st.write("Last query:", st.session_state.visualization_results.get('last_query', 'N/A'))
-            st.write(f"Number of visualizations: {len(st.session_state.visualization_results['figures'])}")
-            
-            # 显示保存的可视化
-            for i, (fig, analysis) in enumerate(zip(
-                st.session_state.visualization_results['figures'],
-                st.session_state.visualization_results['analyses']
-            ), 1):
-                st.markdown(f"### Visualization {i}")
-                st.pyplot(fig)
-                st.markdown("**Analysis:**")
-                st.markdown(analysis, unsafe_allow_html=True)
+    if 'visualization_history' in st.session_state and st.session_state.visualization_history:
+        st.markdown("### Visualization History")
+        for i, record in enumerate(st.session_state.visualization_history, 1):
+            with st.expander(f"Visualization Set {i} - {record['timestamp']} - {record['query']}", expanded=False):
+                for j, (fig_data, analysis) in enumerate(zip(record['figures_data'], record['analyses']), 1):
+                    st.markdown(f"##### Visualization {j}")
+                    # 直接显示base64图像
+                    st.markdown(f'<img src="data:image/png;base64,{fig_data}" style="width:100%; max-width:800px; margin:auto; display:block;">', unsafe_allow_html=True)
+                    st.markdown("**Analysis:**")
+                    st.markdown(analysis, unsafe_allow_html=True)
+                st.markdown("---")  # 添加分隔线
 
 def render_ai_analysis_tab():
     """Render AI analysis tab"""
     st.header("AI Analysis")
     
+    if 'processed_df' not in st.session_state or st.session_state.processed_df is None:
+        st.warning("Please upload data first!")
+        return
+    
+    # 显示当前数据预览
+    st.markdown("### Current Data Preview")
+    st.dataframe(st.session_state.processed_df.head())
+    
+    # 显示数据信息
+    st.markdown("### Data Information")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.write(f"Rows: {st.session_state.processed_df.shape[0]}")
+        st.write(f"Columns: {st.session_state.processed_df.shape[1]}")
+    with col2:
+        st.write("Column Types:")
+        st.write(st.session_state.processed_df.dtypes)
+    
     # Initialize analysis results in session state if not exists
-    if 'analysis_results' not in st.session_state:
-        st.session_state.analysis_results = {
-            'insights': '',
-            'last_query': ''
-        }
+    if 'analysis_history' not in st.session_state:
+        st.session_state.analysis_history = []
     
     # Preset questions
     preset_questions = [
@@ -866,8 +1069,8 @@ def render_ai_analysis_tab():
     with col2:
         custom_query = st.text_input(
             "Or enter your own analysis question:",
-            value=st.session_state.analysis_results['last_query'] if st.session_state.analysis_results['last_query'] and 
-                  st.session_state.analysis_results['last_query'] not in preset_questions else "",
+            value=st.session_state.analysis_results.get('last_query', '') if st.session_state.analysis_results.get('last_query') and 
+                  st.session_state.analysis_results.get('last_query') not in preset_questions else "",
             placeholder="Type your question here..."
         )
     
@@ -879,35 +1082,82 @@ def render_ai_analysis_tab():
                     if st.session_state.insights_generator is None:
                         st.session_state.insights_generator = InsightsGenerator(model="mistral")
                     
-                    enhanced_query = f"Analyze the following and provide insights in English: {analysis_query}"
+                    # 使用具体的查询来生成分析
+                    enhanced_query = f"""Analyze the following and provide insights in a structured format:
+
+Query: {analysis_query}
+
+Please provide your analysis in the following sections:
+1. Key Patterns and Trends
+2. Notable Relationships Between Variables
+3. Important Insights About the Data
+4. Potential Business Implications
+5. Any Anomalies or Points of Interest
+
+Each section should be clearly marked with a heading."""
+                    
+                    # 使用最新的processed_df
+                    df = st.session_state.processed_df.copy()
+                    
+                    # 记录当前数据状态
+                    current_df_hash = hash(df.to_string())
                     
                     insights = st.session_state.insights_generator.generate_insights(
-                        df=st.session_state.df,
+                        df=df,
                         query=enhanced_query,
-                        quality_report=st.session_state.processor.detect_data_quality(st.session_state.df)
+                        quality_report=st.session_state.processor.detect_data_quality(df)
                     )
                     
-                    st.session_state.analysis_results['insights'] = insights
-                    st.session_state.analysis_results['last_query'] = analysis_query
+                    # 创建新的分析记录
+                    new_analysis_record = {
+                        'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        'query': analysis_query,
+                        'insights': insights,
+                        'processed_df_hash': current_df_hash,
+                        'processed_df': df.copy()  # 保存处理后的数据副本
+                    }
                     
+                    # 添加到历史记录
+                    st.session_state.analysis_history.append(new_analysis_record)
+                    
+                    # 更新当前分析结果
+                    st.session_state.analysis_results = new_analysis_record
+                    
+                    # 显示分析结果
                     st.markdown("### AI Analysis Results")
                     st.markdown(insights)
                     
-                    st.markdown("### Data Summary")
-                    st.markdown("Key statistics for numeric columns:")
-                    st.dataframe(st.session_state.df.describe())
+                    # 显示数据摘要
+                    with st.expander("Data Summary", expanded=False):
+                        st.markdown("#### Key Statistics for Numeric Columns")
+                        st.dataframe(df.describe())
+                        
+                        st.markdown("#### Correlation Analysis")
+                        numeric_cols = df.select_dtypes(include=['int64', 'float64']).columns
+                        if len(numeric_cols) > 1:
+                            corr_matrix = df[numeric_cols].corr()
+                            fig, ax = plt.subplots(figsize=(10, 8))
+                            sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', ax=ax)
+                            st.pyplot(fig)
+                            plt.close()
+                    
                 except Exception as e:
                     st.error(f"Error generating insights: {str(e)}")
                     st.warning("Please make sure Ollama service is running")
         else:
             st.warning("Please select a preset question or enter your own analysis question.")
     
-    elif st.session_state.analysis_results['insights']:
-        st.markdown("### Previous Analysis Results")
-        st.markdown(st.session_state.analysis_results['insights'])
-        st.markdown("### Data Summary")
-        st.markdown("Key statistics for numeric columns:")
-        st.dataframe(st.session_state.df.describe())
+    # 显示历史分析
+    if 'analysis_history' in st.session_state and st.session_state.analysis_history:
+        st.markdown("### Analysis History")
+        for i, record in enumerate(st.session_state.analysis_history, 1):
+            st.markdown(f"#### Analysis {i} - {record['timestamp']}")
+            st.write("Query:", record['query'])
+            st.markdown("##### Analysis Results")
+            st.markdown(record['insights'])
+            st.markdown("##### Data Summary")
+            st.dataframe(record['processed_df'].describe())
+            st.markdown("---")  # 添加分隔线
 
 def get_binary_file_downloader_html(file_path, file_label='File'):
     """生成文件下载链接"""
@@ -916,6 +1166,22 @@ def get_binary_file_downloader_html(file_path, file_label='File'):
     b64 = base64.b64encode(data).decode()
     href = f'<a href="data:text/html;base64,{b64}" download="{os.path.basename(file_path)}" class="download-button">{file_label}</a>'
     return href
+
+def clear_local_cache():
+    """清除本地数据缓存"""
+    try:
+        cache_dir = "processed_data"
+        if os.path.exists(cache_dir):
+            # 删除目录下的所有文件
+            for file in os.listdir(cache_dir):
+                file_path = os.path.join(cache_dir, file)
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+            st.success("Local data cache cleared successfully!")
+        else:
+            st.info("No local data cache found.")
+    except Exception as e:
+        st.error(f"Error clearing cache: {str(e)}")
 
 def render_report_tab():
     """Render report generation tab"""
@@ -929,98 +1195,124 @@ def render_report_tab():
         help="HTML format provides better visualization and styling. Markdown is more lightweight and text-focused."
     )
     
+    # 添加清除缓存的按钮
+    st.markdown("---")
+    st.markdown("### Cache Management")
+    if st.button("Clear Local Data Cache", help="Delete all processed data files to free up disk space"):
+        clear_local_cache()
+    
+    # 选择要包含在报告中的可视化记录
+    st.markdown("### Select Visualizations to Include")
+    selected_viz_indices = []
+    if 'visualization_history' in st.session_state and st.session_state.visualization_history:
+        for i, record in enumerate(st.session_state.visualization_history, 1):
+            if st.checkbox(f"Visualization {i} - {record['timestamp']} - {record['query']}", value=True):
+                selected_viz_indices.append(i-1)
+    
+    # 选择要包含在报告中的分析记录
+    st.markdown("### Select Analysis to Include")
+    selected_analysis_indices = []
+    if 'analysis_history' in st.session_state and st.session_state.analysis_history:
+        for i, record in enumerate(st.session_state.analysis_history, 1):
+            if st.checkbox(f"Analysis {i} - {record['timestamp']} - {record['query']}", value=True):
+                selected_analysis_indices.append(i-1)
+    
+    # 生成报告按钮
     if st.button("Generate Report"):
-        if 'df' not in st.session_state:
+        if 'processed_df' not in st.session_state:
             st.error("Please upload data first!")
             return
             
         try:
             with st.spinner("Generating report..."):
-                # Get data quality report
-                quality_report = st.session_state.processor.detect_data_quality(st.session_state.df)
+                # 使用session state中的处理后的数据
+                df = st.session_state.processed_df
                 
-                # Get AI insights
-                if st.session_state.insights_generator is None:
-                    st.session_state.insights_generator = InsightsGenerator(model="mistral")
-                
-                analysis_text = st.session_state.insights_generator.generate_insights(
-                    df=st.session_state.df,
-                    query="Provide a comprehensive analysis of this dataset, including key patterns, trends, and insights.",
-                    quality_report=quality_report
-                )
-                
-                # Initialize visualizer if needed
-                if st.session_state.visualizer is None:
-                    st.session_state.visualizer = DataVisualizer()
-                
-                # Get or generate visualizations and their analyses
-                figures = []
-                analyses = []
-                
-                # First try to get existing visualizations from session state
-                if 'visualization_results' in st.session_state and st.session_state.visualization_results:
-                    if 'figures' in st.session_state.visualization_results:
-                        figures = st.session_state.visualization_results['figures']
-                        analyses = st.session_state.visualization_results.get('analyses', [])
-                
-                # If no visualizations exist, generate default ones
-                if not figures:
-                    # Get visualization suggestions
-                    suggestions = st.session_state.visualizer.suggest_visualizations(
-                        st.session_state.df,
-                        "Suggest key visualizations to understand the main patterns and relationships in the data"
-                    )
-                    
-                    # Create visualizations from suggestions
-                    for suggestion in suggestions:
-                        fig = st.session_state.visualizer.create_visualization(
-                            suggestion,
-                            st.session_state.df
-                        )
-                        if fig is not None:
-                            figures.append(fig)
-                            
-                            # Generate analysis for this visualization
-                            viz_analysis = st.session_state.visualizer._generate_visualization_analysis(
-                                st.session_state.df,
-                                suggestion
-                            )
-                            analyses.append(viz_analysis)
-                
-                # Store the visualizations and analyses in session state
-                st.session_state.visualization_results = {
-                    'figures': figures,
-                    'analyses': analyses
+                # 生成详细的数据质量报告
+                quality_report = {
+                    'missing_values': {
+                        'total': df.isnull().sum().sum(),
+                        'by_column': pd.DataFrame({
+                            'Missing Count': df.isnull().sum(),
+                            'Missing Percentage': (df.isnull().sum() / len(df) * 100).round(2)
+                        })
+                    },
+                    'data_types': {
+                        'numeric': df.select_dtypes(include=['int64', 'float64']).columns.tolist(),
+                        'categorical': df.select_dtypes(include=['object']).columns.tolist(),
+                        'datetime': df.select_dtypes(include=['datetime64']).columns.tolist()
+                    },
+                    'basic_stats': df.describe(),
+                    'unique_values': pd.DataFrame({
+                        'Unique Count': df.nunique(),
+                        'Unique Percentage': (df.nunique() / len(df) * 100).round(2)
+                    }),
+                    'duplicates': {
+                        'count': df.duplicated().sum(),
+                        'percentage': (df.duplicated().sum() / len(df) * 100).round(2)
+                    }
                 }
                 
-                # Generate report
+                # 收集选中的可视化和分析
+                figures_data = []
+                analyses = []
+                analysis_texts = []
+                
+                # 添加选中的可视化
+                if selected_viz_indices:
+                    for idx in selected_viz_indices:
+                        record = st.session_state.visualization_history[idx]
+                        figures_data.extend(record['figures_data'])
+                        analyses.extend(record['analyses'])
+                
+                # 添加选中的分析
+                if selected_analysis_indices:
+                    for idx in selected_analysis_indices:
+                        record = st.session_state.analysis_history[idx]
+                        # 创建结构化的分析内容
+                        formatted_analysis = f"""
+### Analysis Report - {record['timestamp']}
+
+#### Query
+{record['query']}
+
+#### Key Findings
+{record['insights']}
+
+---
+"""
+                        analysis_texts.append(formatted_analysis)
+                
+                # 合并所有分析文本
+                analysis_text = "\n\n".join(analysis_texts) if analysis_texts else None
+                
+                # Generate report content
                 report_generator = ReportGenerator()
+                
+                # Generate report based on format
+                if report_format == "HTML":
+                    content = report_generator.generate_html_report(
+                        df=df,
+                        analysis_text=analysis_text,
+                        quality_report=quality_report,
+                        figures_data=figures_data,
+                        analyses=analyses
+                    )
+                else:
+                    content = report_generator.generate_markdown_report(
+                        df=df,
+                        analysis_text=analysis_text,
+                        quality_report=quality_report,
+                        figures_data=figures_data,
+                        analyses=analyses
+                    )
                 
                 # Get current timestamp for filename
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 filename = f"report_{timestamp}"
                 
-                # Generate report based on selected format
-                format_ext = 'html' if report_format == "HTML" else 'md'
-                if format_ext == 'html':
-                    content = report_generator.generate_html_report(
-                        st.session_state.df,
-                        analysis_text,
-                        quality_report,
-                        figures,
-                        analyses
-                    )
-                else:
-                    content = report_generator.generate_markdown_report(
-                        st.session_state.df,
-                        analysis_text,
-                        quality_report,
-                        figures,
-                        analyses
-                    )
-                
                 # Save report
-                report_path = report_generator.save_report(content, filename, format=format_ext)
+                report_path = report_generator.save_report(content, filename, format=report_format)
                 
                 # Success message
                 st.success(f"Report generated successfully!")
@@ -1029,7 +1321,7 @@ def render_report_tab():
                 st.code(f"Report saved at: {report_path}", language="bash")
                 
                 # Add download button for HTML reports
-                if format_ext == 'html':
+                if report_format == "HTML":
                     st.markdown("### Download Report")
                     st.markdown(get_binary_file_downloader_html(report_path, "Download HTML Report"), unsafe_allow_html=True)
                     
@@ -1043,22 +1335,69 @@ def render_report_tab():
                     with st.expander("Preview Report", expanded=True):
                         with open(report_path, 'r', encoding='utf-8') as f:
                             st.markdown(f.read())
-
+        
         except Exception as e:
             st.error(f"Error generating report: {str(e)}")
             st.error("Please check the data and try again.")
 
+def save_processed_data(df, step_type):
+    """Save processed data to local storage"""
+    try:
+        # Use fixed data directory in Docker environment
+        output_dir = "/app/data/processed"
+        
+        # Ensure output directory exists
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        
+        # Generate filename
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"{step_type}_{timestamp}.csv"
+        filepath = os.path.join(output_dir, filename)
+        
+        # Save data
+        df.to_csv(filepath, index=False)
+        
+        # Update file path in session state
+        st.session_state.data_processing_state['last_saved_file'] = filepath
+        
+        # Display save information
+        st.success(f"Processed data saved to: {filepath}")
+        
+        # Add download button
+        st.markdown("### Download Processed Data")
+        st.markdown(get_binary_file_downloader_html(filepath, "Download CSV File"), unsafe_allow_html=True)
+        
+        return filepath
+    except Exception as e:
+        st.error(f"Error saving processed data: {str(e)}")
+        return None
+
+def load_processed_data():
+    """Load recently processed data from local storage"""
+    try:
+        if 'last_saved_file' in st.session_state.data_processing_state:
+            filepath = st.session_state.data_processing_state['last_saved_file']
+            if os.path.exists(filepath):
+                return pd.read_csv(filepath)
+        return None
+    except Exception as e:
+        st.error(f"Error loading processed data: {str(e)}")
+        return None
+
 def handle_missing_values(df, method, fill_value=None):
-    """处理缺失值"""
+    """Handle missing values in the dataset"""
     progress_bar = st.progress(0)
     progress_text = st.empty()
     
     try:
         progress_text.text("Processing missing values...")
-        progress_bar.progress(30)
         
-        # 记录处理步骤
-        step_info = {
+        # Create data copy
+        df_processed = df.copy()
+        
+        # Record pre-processing state
+        st.session_state.data_processing_state['current_step'] = {
             'type': 'missing_values',
             'method': method,
             'fill_value': fill_value,
@@ -1066,61 +1405,64 @@ def handle_missing_values(df, method, fill_value=None):
         }
         
         if method == "drop":
-            df = df.dropna()
-            message = "Rows with missing values have been dropped"
-        elif method == "mean":
-            numeric_cols = df.select_dtypes(include=['int64', 'float64']).columns
-            for col in numeric_cols:
-                df[col] = df[col].fillna(df[col].mean())
-            message = "Missing values filled with column means"
-        elif method == "median":
-            numeric_cols = df.select_dtypes(include=['int64', 'float64']).columns
-            for col in numeric_cols:
-                df[col] = df[col].fillna(df[col].median())
-            message = "Missing values filled with column medians"
-        elif method == "mode":
-            for col in df.columns:
-                df[col] = df[col].fillna(df[col].mode()[0] if not df[col].mode().empty else None)
-            message = "Missing values filled with column modes"
-        elif method == "constant" and fill_value is not None:
-            try:
-                numeric_value = float(fill_value)
-                df = df.fillna(numeric_value)
-                message = f"Missing values filled with constant value: {fill_value}"
-            except ValueError:
-                df = df.fillna(str(fill_value))
-                message = f"Missing values filled with constant value: {fill_value}"
-        else:
-            raise ValueError("Must specify a valid method and fill value if using constant method")
-        
-        # 更新处理状态
-        st.session_state.data_processing_state['processing_steps'].append(step_info)
-        st.session_state.data_processing_state['last_modified'] = datetime.now()
+            # Remove rows with missing values
+            df_processed = df_processed.dropna()
+        elif method == "fill_mean":
+            # Fill with column mean
+            df_processed = df_processed.fillna(df_processed.mean())
+        elif method == "fill_median":
+            # Fill with column median
+            df_processed = df_processed.fillna(df_processed.median())
+        elif method == "fill_mode":
+            # Fill with column mode
+            df_processed = df_processed.fillna(df_processed.mode().iloc[0])
+        elif method == "fill_constant":
+            # Fill with specified value
+            if fill_value is not None:
+                df_processed = df_processed.fillna(fill_value)
+            else:
+                st.error("Please specify a fill value")
+                return df
         
         progress_bar.progress(100)
-        progress_text.text("Missing values handled successfully!")
+        progress_text.text("Missing values processed successfully!")
         
-        # 显示处理结果统计
-        st.markdown("### Missing Values Summary")
+        # Display before and after comparison
         col1, col2 = st.columns(2)
-        
         with col1:
-            st.write("Before processing:")
-            st.write(pd.DataFrame({
-                'Missing Values': df.isnull().sum(),
-                'Percentage': (df.isnull().sum() / len(df) * 100).round(2)
-            }))
-            
+            st.write("Before Processing:")
+            missing_before = df.isnull().sum()
+            st.write(missing_before[missing_before > 0])
         with col2:
-            st.write("After processing:")
-            st.write(pd.DataFrame({
-                'Missing Values': df.isnull().sum(),
-                'Percentage': (df.isnull().sum() / len(df) * 100).round(2)
-            }))
-            
-        st.success(message)
-        return df
+            st.write("After Processing:")
+            missing_after = df_processed.isnull().sum()
+            st.write(missing_after[missing_after > 0])
         
+        # Save processed data
+        saved_file = save_processed_data(df_processed, "missing_values")
+        if saved_file:
+            st.success(f"Processed data saved to: {saved_file}")
+        
+        # Update processed_df in session state
+        st.session_state.processed_df = df_processed
+        
+        # Record processing step
+        step_info = {
+            'type': 'missing_values',
+            'method': method,
+            'fill_value': fill_value,
+            'timestamp': datetime.now(),
+            'data_hash': hash(df_processed.to_string()),
+            'saved_file': saved_file
+        }
+        st.session_state.data_processing_state['processing_steps'].append(step_info)
+        
+        # Update last modified time and data hash
+        st.session_state.data_processing_state['last_modified'] = datetime.now()
+        st.session_state.data_processing_state['current_df_hash'] = hash(df_processed.to_string())
+        
+        return df_processed
+    
     except Exception as e:
         st.error(f"Error handling missing values: {str(e)}")
         return df
@@ -1129,7 +1471,7 @@ def handle_missing_values(df, method, fill_value=None):
         progress_text.empty()
 
 def normalize_data(df, method):
-    """标准化数据"""
+    """Normalize data in the dataset"""
     progress_bar = st.progress(0)
     progress_text = st.empty()
     
@@ -1143,11 +1485,11 @@ def normalize_data(df, method):
             
         progress_bar.progress(30)
         
-        # 创建一个新的DataFrame来存储标准化后的数据
+        # Create new DataFrame for normalized data
         df_normalized = df.copy()
         
         if method == "minmax":
-            # MinMax标准化 (0-1区间)
+            # MinMax normalization (0-1 range)
             for col in numeric_cols:
                 min_val = df[col].min()
                 max_val = df[col].max()
@@ -1157,7 +1499,7 @@ def normalize_data(df, method):
                     st.warning(f"Column {col} has constant value, skipping normalization")
         
         elif method == "standard":
-            # Z-score标准化 (均值0，标准差1)
+            # Z-score normalization (mean=0, std=1)
             for col in numeric_cols:
                 mean_val = df[col].mean()
                 std_val = df[col].std()
@@ -1167,7 +1509,7 @@ def normalize_data(df, method):
                     st.warning(f"Column {col} has constant value, skipping normalization")
         
         elif method == "robust":
-            # 基于四分位数的标准化
+            # Quartile-based normalization
             for col in numeric_cols:
                 q1 = df[col].quantile(0.25)
                 q3 = df[col].quantile(0.75)
@@ -1178,11 +1520,11 @@ def normalize_data(df, method):
                     st.warning(f"Column {col} has too many similar values, skipping normalization")
         
         elif method == "log":
-            # 对数转换
+            # Logarithmic transformation
             for col in numeric_cols:
                 min_val = df[col].min()
                 if min_val <= 0:
-                    # 如果有非正值，先平移数据使所有值为正
+                    # Shift data to make all values positive if needed
                     shift = abs(min_val) + 1
                     df_normalized[col] = np.log(df[col] + shift)
                 else:
@@ -1191,7 +1533,7 @@ def normalize_data(df, method):
         progress_bar.progress(100)
         progress_text.text("Data normalization completed!")
         
-        # 显示标准化前后的统计信息
+        # Display statistics before and after normalization
         st.markdown("### Normalization Results")
         for col in numeric_cols:
             st.write(f"\n**Column: {col}**")
@@ -1203,6 +1545,29 @@ def normalize_data(df, method):
                 st.write("After Normalization:")
                 st.write(df_normalized[col].describe())
         
+        # Save processed data
+        saved_file = save_processed_data(df_normalized, "normalization")
+        if saved_file:
+            st.success(f"Processed data saved to: {saved_file}")
+        
+        # Update processed_df in session state
+        st.session_state.processed_df = df_normalized
+        
+        # Record processing step
+        step_info = {
+            'type': 'normalization',
+            'method': method,
+            'columns': list(numeric_cols),
+            'timestamp': datetime.now(),
+            'data_hash': hash(df_normalized.to_string()),
+            'saved_file': saved_file
+        }
+        st.session_state.data_processing_state['processing_steps'].append(step_info)
+        
+        # Update last modified time and data hash
+        st.session_state.data_processing_state['last_modified'] = datetime.now()
+        st.session_state.data_processing_state['current_df_hash'] = hash(df_normalized.to_string())
+        
         return df_normalized
     
     except Exception as e:
@@ -1212,33 +1577,90 @@ def normalize_data(df, method):
         progress_bar.empty()
         progress_text.empty()
 
-def handle_outliers(df, method, threshold=None):
-    """处理异常值"""
+def handle_outliers(df, method, threshold):
+    """Handle outliers in the dataset"""
     progress_bar = st.progress(0)
     progress_text = st.empty()
     
     try:
-        progress_text.text("Detecting outliers...")
+        progress_text.text("Handling outliers...")
         numeric_cols = df.select_dtypes(include=['int64', 'float64']).columns
         
         if len(numeric_cols) == 0:
-            st.warning("No numeric columns found for outlier detection")
+            st.warning("No numeric columns found for outlier handling")
             return df
             
         progress_bar.progress(30)
         
-        if method == "zscore":
-            z_scores = np.abs(stats.zscore(df[numeric_cols]))
-            df = df[(z_scores < threshold).all(axis=1)]
-        elif method == "iqr":
-            Q1 = df[numeric_cols].quantile(0.25)
-            Q3 = df[numeric_cols].quantile(0.75)
-            IQR = Q3 - Q1
-            df = df[~((df[numeric_cols] < (Q1 - 1.5 * IQR)) | (df[numeric_cols] > (Q3 + 1.5 * IQR))).any(axis=1)]
+        # Create new DataFrame for processed data
+        df_processed = df.copy()
+        
+        for col in numeric_cols:
+            if method == "iqr":
+                # IQR method
+                Q1 = df[col].quantile(0.25)
+                Q3 = df[col].quantile(0.75)
+                IQR = Q3 - Q1
+                lower_bound = Q1 - threshold * IQR
+                upper_bound = Q3 + threshold * IQR
+                
+                # Replace outliers
+                df_processed.loc[df[col] < lower_bound, col] = lower_bound
+                df_processed.loc[df[col] > upper_bound, col] = upper_bound
+                
+            elif method == "zscore":
+                # Z-score method
+                z_scores = np.abs((df[col] - df[col].mean()) / df[col].std())
+                df_processed.loc[z_scores > threshold, col] = df[col].mean()
+                
+            elif method == "percentile":
+                # Percentile method
+                lower_bound = df[col].quantile(threshold/100)
+                upper_bound = df[col].quantile(1 - threshold/100)
+                df_processed.loc[df[col] < lower_bound, col] = lower_bound
+                df_processed.loc[df[col] > upper_bound, col] = upper_bound
         
         progress_bar.progress(100)
         progress_text.text("Outlier handling completed!")
-        return df
+        
+        # Display statistics before and after processing
+        st.markdown("### Outlier Handling Results")
+        for col in numeric_cols:
+            st.write(f"\n**Column: {col}**")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.write("Before Processing:")
+                st.write(df[col].describe())
+            with col2:
+                st.write("After Processing:")
+                st.write(df_processed[col].describe())
+        
+        # Save processed data
+        saved_file = save_processed_data(df_processed, "outliers")
+        if saved_file:
+            st.success(f"Processed data saved to: {saved_file}")
+        
+        # Update processed_df in session state
+        st.session_state.processed_df = df_processed
+        
+        # Record processing step
+        step_info = {
+            'type': 'outliers',
+            'method': method,
+            'threshold': threshold,
+            'columns': list(numeric_cols),
+            'timestamp': datetime.now(),
+            'data_hash': hash(df_processed.to_string()),
+            'saved_file': saved_file
+        }
+        st.session_state.data_processing_state['processing_steps'].append(step_info)
+        
+        # Update last modified time and data hash
+        st.session_state.data_processing_state['last_modified'] = datetime.now()
+        st.session_state.data_processing_state['current_df_hash'] = hash(df_processed.to_string())
+        
+        return df_processed
+    
     except Exception as e:
         st.error(f"Error handling outliers: {str(e)}")
         return df
@@ -1247,13 +1669,13 @@ def handle_outliers(df, method, threshold=None):
         progress_text.empty()
 
 def encode_categorical(df, method):
-    """编码分类变量"""
+    """Encode categorical variables in the dataset"""
     progress_bar = st.progress(0)
     progress_text = st.empty()
     
     try:
-        progress_text.text("Encoding categorical columns...")
-        categorical_cols = df.select_dtypes(include=['object', 'category']).columns
+        progress_text.text("Encoding categorical variables...")
+        categorical_cols = df.select_dtypes(include=['object']).columns
         
         if len(categorical_cols) == 0:
             st.warning("No categorical columns found for encoding")
@@ -1261,16 +1683,66 @@ def encode_categorical(df, method):
             
         progress_bar.progress(30)
         
+        # Create new DataFrame for encoded data
+        df_encoded = df.copy()
+        
         if method == "label":
-            le = LabelEncoder()
+            # Label encoding
             for col in categorical_cols:
-                df[col] = le.fit_transform(df[col])
-        elif method == "onehot":
-            df = pd.get_dummies(df, columns=categorical_cols)
+                df_encoded[col] = pd.Categorical(df_encoded[col]).codes
+        elif method == "one_hot":
+            # One-hot encoding
+            df_encoded = pd.get_dummies(df_encoded, columns=categorical_cols)
+        elif method == "ordinal":
+            # Ordinal encoding
+            for col in categorical_cols:
+                df_encoded[col] = pd.Categorical(df_encoded[col], ordered=True).codes
         
         progress_bar.progress(100)
         progress_text.text("Categorical encoding completed!")
-        return df
+        
+        # Display encoding results
+        st.markdown("### Encoding Results")
+        for col in categorical_cols:
+            st.write(f"\n**Column: {col}**")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.write("Before Encoding:")
+                st.write(df[col].value_counts())
+            with col2:
+                st.write("After Encoding:")
+                if method == "one_hot":
+                    # For one-hot encoding, show new columns
+                    new_cols = [c for c in df_encoded.columns if c.startswith(col)]
+                    st.write(df_encoded[new_cols].sum())
+                else:
+                    st.write(df_encoded[col].value_counts())
+        
+        # Save processed data
+        saved_file = save_processed_data(df_encoded, "encoding")
+        if saved_file:
+            st.success(f"Processed data saved to: {saved_file}")
+        
+        # Update processed_df in session state
+        st.session_state.processed_df = df_encoded
+        
+        # Record processing step
+        step_info = {
+            'type': 'categorical_encoding',
+            'method': method,
+            'columns': list(categorical_cols),
+            'timestamp': datetime.now(),
+            'data_hash': hash(df_encoded.to_string()),
+            'saved_file': saved_file
+        }
+        st.session_state.data_processing_state['processing_steps'].append(step_info)
+        
+        # Update last modified time and data hash
+        st.session_state.data_processing_state['last_modified'] = datetime.now()
+        st.session_state.data_processing_state['current_df_hash'] = hash(df_encoded.to_string())
+        
+        return df_encoded
+    
     except Exception as e:
         st.error(f"Error encoding categorical variables: {str(e)}")
         return df
@@ -1280,8 +1752,10 @@ def encode_categorical(df, method):
 
 def main():
     # Initialize session state
-    if 'df' not in st.session_state:
-        st.session_state.df = None
+    if 'processed_df' not in st.session_state:
+        st.session_state.processed_df = None
+    if 'original_df' not in st.session_state:
+        st.session_state.original_df = None
     if 'processor' not in st.session_state:
         st.session_state.processor = None
     if 'visualizer' not in st.session_state:
@@ -1289,30 +1763,30 @@ def main():
     if 'insights_generator' not in st.session_state:
         st.session_state.insights_generator = None
     
-    # 维护可视化和分析结果的状态
-    if 'visualization_results' not in st.session_state:
-        st.session_state.visualization_results = {
-            'suggestions': None,
-            'figures': [],
-            'analyses': [],
-            'last_query': None
-        }
+    # Maintain visualization and analysis results state
+    if 'visualization_history' not in st.session_state:
+        st.session_state.visualization_history = []
+    if 'analysis_history' not in st.session_state:
+        st.session_state.analysis_history = []
     if 'analysis_results' not in st.session_state:
         st.session_state.analysis_results = {
-            'insights': None,
-            'last_query': None
+            'last_query': '',
+            'insights': '',
+            'processed_df_hash': None,
+            'processed_df': None
         }
     if 'report_status' not in st.session_state:
         st.session_state.report_status = {
             'last_report': None,
             'last_timestamp': None
         }
-    # 添加数据处理状态跟踪
+    # Add data processing state tracking
     if 'data_processing_state' not in st.session_state:
         st.session_state.data_processing_state = {
-            'original_data': None,  # 原始数据备份
-            'processing_steps': [],  # 处理步骤记录
-            'last_modified': None    # 最后修改时间
+            'original_data': None,  # Original data backup
+            'processing_steps': [],  # Processing steps record
+            'last_modified': None,   # Last modification time
+            'current_step': None     # Current processing step
         }
 
     st.title("Automated Data Report Generator")
@@ -1326,6 +1800,7 @@ def main():
         "Report Generation"
     ])
     
+    # Use tab navigation
     with tabs[0]:
         render_data_upload_tab()
     with tabs[1]:
